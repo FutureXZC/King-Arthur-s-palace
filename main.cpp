@@ -22,7 +22,7 @@ using namespace std;
 #define Underflow 3
 #define Notpresent 4
 #define Duplicate 5
-#define INFTY 32767
+#define INFTY 32767	//假装这个是无穷大
 
 //将国王与骑士问题放在Chess类里实现
 class Chess
@@ -34,11 +34,11 @@ public:
 	int GetCol(int m);//通过一维坐标求得对应二维坐标中的列坐标
 	void SetKing();//设置国王坐标（二维）
 	void SetKnight();//设置骑士数量与骑士坐标
-
-	void Dijkstra(int u, int v);//迪杰斯特拉算法
+	
 	int Choose(vector<int> d, vector<bool> s);//选取当前最短路径的下标
+	int Dijkstra(int u, int v);//迪杰斯特拉算法，返回源点到终点的步数
 	void NarrowTheRange();//剪枝函数，求出集合点的范围
-	int AssemblyPoint();//计算集合点
+	int FindAssemblyPoint();//找到集合点
 	
 	void Output();//测试输出
 private:
@@ -47,7 +47,8 @@ private:
 	int knight[63][2];//骑士坐标（x，y）,最多63个骑士
 	int m[8][8][8][8];// m[x][y][u][v], 表示从点（x，y）到（u，v）的最短路径
 	int v[64][64];//邻接矩阵，对应的是以棋盘上64个格点为顶点、以骑士的运动方式生成的图
-	int finalRang[4][2];//存储可能出现最短路径点的范围
+	int range[4];//存储可能出现集合点的坐标范围，依次为 xMax , xMin, yMax, yMin
+	int pickArea[4];//已国王为中心最大可为5×5的方形区域，该区域内国王可以被骑士接上
 };
 
 /*
@@ -171,15 +172,15 @@ int Chess::Choose(vector<int> d, vector<bool> s)
 }
 
 /*
-* @brief	迪杰斯特拉算法
+* @brief	迪杰斯特拉算法，返回源点到终点的步数
 * @param	u	源点
 * @param	v	终点
 */
-void Chess::Dijkstra(int u, int v)
+int Chess::Dijkstra(int u, int v)
 {
 	int i, j, k;//计数标记
 	vector<bool> s;//s[i]记录从源点u到顶点i的路径是否已经确定
-	vector<int> d;//d[i]记录从源点u到顶点i的当前最短路径长度
+	vector<int> d;//d[i]记录从源点u到顶点i的当前最短路径长度（步数）
 	vector<int> path;//path[i]记录从源点u到顶点i的当前最短路径上顶点i的直接前驱顶点的序号
 	s.resize(64, false);//s置零
 	d.resize(64);
@@ -210,34 +211,83 @@ void Chess::Dijkstra(int u, int v)
 				path[j] = k;
 			}
 	}
-
-	cout << endl;
+	return d[v];
+	/*cout << endl;*/
 	/*for(i = 0; i < 64; i++)*/
-	cout << "顶点" << u << "到" << v << "的最短路径为" << d[v] << endl;
+	/*cout << "顶点" << u << "到" << v << "的最短路径为" << d[v] << endl;
 	for (int i = 0; i < 64; i++)
-		cout << "path[" << i << "] = " << path[i] << endl;
+		cout << "path[" << i << "] = " << path[i] << endl;*/
 }
 
 /*
-*@ brief	剪枝函数	求出集合点所在的范围,并存储到finalRange数组中，仅保存四个顶点的二维坐标
+*@ brief	剪枝函数	求出集合点所在的范围,并存储到range数组中，仅保存最大和最小的行列值，同时求出以国王为中心最大为5×5的接送区域pickArea
 *			核心思想	若国王 + 骑士 >= 4人，集合点必定出现在最外围的四个角色所围成的四边形中
-*						若国王 + 骑士 < 4人，无法构成四边形，则以这3点或2点为基础构成一个四边形
+*						若国王 + 骑士 < 4人，无法构成四边形，则以这3点或2点为基础构成一个四边形，极限情况是一个点
 */
 void Chess::NarrowTheRange() 
 {
-	//当国王与骑士不少于4人时
-	if (knightNum + 1 >= 4)
+	int rowMax , rowMin, colMax, colMin;//四边形的坐标范围，初始化为国王的点
+	rowMax = rowMin = king[0];
+	colMax = colMin = king[1];
+	//遍历骑士坐标，求得可能存在集合点的范围
+	for (int i = 0; i < knightNum; i++)
 	{
-
+		rowMax = (rowMax > knight[i][0]) ? rowMax : knight[i][0];
+		rowMin = (rowMin < knight[i][0]) ? rowMin : knight[i][0];
+		colMax = (colMax > knight[i][1]) ? colMax : knight[i][1];
+		colMin = (colMin < knight[i][1]) ? colMin : knight[i][1];
 	}
-	//当国王与骑士合计3人时
-	else if(knightNum == 3){
+	//将求得的范围存入range数组
+	range[0] = rowMin; range[1] = rowMax;
+	range[2] = colMin; range[3] = colMax;
 
-	}
-	//当国王与骑士合计2人时
-	else {
+	//求国王被接送的区域，只需判断坐标±2或±1后是否越界即可
 
+}
+
+/*
+* @brief	找到集合点
+*			核心思想	1、已通过剪枝函数求得集合点可能出现的范围，只需枚举出现在range数组界定的范围内的点
+*						2、骑士不接国王：让所有角色都自己走，求得总路径最短的集合点（1）
+*						3、骑士接国王：让离国王最近的骑士去接国王，以接到国王的地点作为该骑士的起始点，再求集合点（2）
+*						4、取集合点（1）和（2）中较小者作为最终集合点，若二者相等，取（2），这样国王比较有牌面
+*/
+int Chess::FindAssemblyPoint()
+{
+	//取出range数组内的坐标范围
+	int rowMin = range[0]; int rowMax = range[1];
+	int colMin = range[2]; int colMax = range[3];
+	int step = 0;//计步器
+	int minStep1 = INFTY, minStep2 = INFTY;//记录最少步数，初始化为无穷大
+	int point1 = 0, point2 = 0;//初始化两种方案的集合点为一维坐标0
+	int myRealKnight = 0;//接国王的“真命天骑”，初始化为第0个骑士，对应knight数组的行标
+
+	//用一维坐标遍历棋盘上的点
+	//骑士不接国王时
+	for (int i = 0; i < 64; i++)
+	{
+		//判断该点是否在剪枝函数限定的范围内，若是，则继续计算，否则跳过查询下一个点
+		if (GetRow(i) > rowMin && GetRow(i) < rowMax && GetCol(i) > colMin && GetCol(i) < colMax)
+		{
+			for (int j = 0; j < knightNum; j++)
+			{
+				step += Dijkstra(i, knight[j][0] * 8 + knight[j][1]);//用迪杰斯特拉算法求各个骑士到给定点的步数
+			}
+			//国王可以斜着走，因此国王的步数 = max（ 源目两点行坐标的差值 , 源目两点列坐标的差值）
+			step += abs(king[0] - GetRow(i)) > abs(king[1] - GetCol(i)) ? abs(king[0] - GetRow(i)) : abs(king[1] - GetCol(i));
+			//更新当前最小步数与暂定集合点1
+			if (step < minStep1)
+			{
+				minStep1 = step;
+				point1 = i;
+			}
+		}
 	}
+
+	//骑士接国王时
+	//先挑选出离国王最近的骑士（走到国王附近所需步数最少的骑士）
+	//经简单推论，国王最多走两步就能被骑士接到，故接送地点即为以国王初始位置为中心5×5的范围。详细推导见文档
+
 }
 
 //测试输出
@@ -252,7 +302,7 @@ int main()
 {
 	Chess c;
 
-	c.Dijkstra(0, 19);//测试从顶点0到顶点19
+	c.Dijkstra(2, 10);//测试从顶点0到顶点19
 	//c.SetKing();
 	//c.SetKnight();
 	//c.Output();
