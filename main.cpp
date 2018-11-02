@@ -9,9 +9,8 @@
 *			分别计算 上述两种情况下所需的最少步数，取其中较短者
 *			经简单推演，国王如果要被骑士接，最多只需要走2步，因此接到国王的区域的最大范围就是以国王为中心的5×5的范围
 *			经简单推演，最终的集合点必定在由最外围的骑士和国王所围成的多边形（也可能是线段或点）内
-*	Others:为了便于程序实现，在此将多边形补全为四边形，图解详见文档
-*	Version 2.0:由于程序内用到的数组都是定容的，因此放弃使用vector
-*				更新了一些弱智注释，重定义了一些弱智概念
+*	Others：为了便于程序实现，在此将多边形补全为四边形，图解详见文档
+*	Version 3.0：修正了部分注释错误
 */
 
 #include<iostream>
@@ -19,6 +18,7 @@
 using namespace std;
 
 #define INFTY 32767	//假装这个是无穷大
+
 
 /*
 * @brief	Chess类	生成一个8×8的棋盘，抽象化国王与骑士问题（即 经典问题：亚瑟王的宫殿）
@@ -34,21 +34,21 @@ public:
 	int GetRow(int m);//通过一维坐标求得对应二维坐标中的行坐标
 	int GetCol(int m);//通过一维坐标求得对应二维坐标中的列坐标
 	void SetKing();//设置国王坐标（二维）
-	void SetKnight();//设置骑士数量与骑士坐标
+	void SetKnight();//设置骑士数量与骑士坐标（二维）
 	
 	int Choose(int *d, bool *s);//选取当前最短路径的下标
 	int Dijkstra(int u, int v);//迪杰斯特拉算法，返回源点到终点的步数
-	void NarrowTheRange();//剪枝函数，求出集合点的范围
+	void NarrowTheRange();//剪枝函数，分别求出集合点的所在范围和接送点的所在范围
 	void FindAssemblyPoint();//找到集合点
 	
-	void Output();//测试输出
+	void Output();//输出计算结果
 private:
-	int king[2];//国王坐标（x，y）
+	int king[2];//国王坐标（行，列）
 	int knightNum;//骑士数量
-	int knight[63][2];//骑士坐标（x，y）,最多63个骑士
+	int knight[63][2];//骑士坐标（行，列）,最多63个骑士
 	int v[64][64];//邻接矩阵，对应的是以棋盘上64个格点为顶点、以骑士的运动方式生成的图
 	int range[4];//存储可能出现集合点的坐标范围，依次为 xMax , xMin, yMax, yMin
-	int pickArea[4];//已国王为中心最大可为5×5的方形区域，该区域内国王可以被骑士接上
+	int pickArea[4];//以国王为中心最大可为5×5的方形区域，该区域内国王可以被骑士接上
 	int pickKnight;//“御用骑士”，其值对应knight数组的行标（即第n个骑士）
 	int pickPoint;//骑士接上国王位置的一维坐标
 	int minPickStep;//骑士走到接送点的最小步数
@@ -56,9 +56,9 @@ private:
 	int assemblyPoint[2];//集合点的坐标
 };
 
+
 /*
 * @brief	构造函数	初始化骑士和国王坐标为-1
-*						初始化最短路径矩阵m
 *						以骑士运动方式生成图及其邻接矩阵
 */
 Chess::Chess()
@@ -81,6 +81,7 @@ Chess::Chess()
 	}
 }
 
+
 /*
 * @brief	通过一维坐标求得对应二维坐标中的行坐标
 * @param	m	顶点的一维坐标 
@@ -91,6 +92,7 @@ int Chess::GetRow(int m)
 	int row = m/8;
 	return row;
 }
+
 
 /*
 * @brief	通过一维坐标求得对应二维坐标中的列坐标
@@ -103,6 +105,7 @@ int Chess::GetCol(int m)
 	return col;
 }
 
+
 /*
 * @brief	设置国王坐标(二维)
 */
@@ -112,12 +115,13 @@ void Chess::SetKing()
 	cin >> king[0] >> king[1];
 }
 
+
 /*
-* @brief	设置骑士数量与骑士坐标
+* @brief	设置骑士数量与骑士坐标（二维）
 */
 void Chess::SetKnight()
 {
-	int x, y;//骑士横纵坐标
+	int x, y;//骑士的行列坐标
 	do {
 		cout << "请输入在8×8棋盘中骑士的数量：";
 		cin >> knightNum;
@@ -141,6 +145,7 @@ void Chess::SetKnight()
 		cout << "计算中..." << endl;
 }
 
+
 /*
 * @brief	选取当前最短路径的下标
 * @param	d	记录从源点u到顶点i的当前最短路径长度
@@ -160,6 +165,7 @@ int Chess::Choose(int *d, bool *s)
 		}
 	return minpos;//返回下标位置
 }
+
 
 /*
 * @brief	迪杰斯特拉算法，返回源点到终点的步数
@@ -201,6 +207,7 @@ int Chess::Dijkstra(int u, int v)
 	return d[v];
 }
 
+
 /*
 *@ brief	剪枝函数	求出集合点所在的范围,并存储到range数组中，仅保存最大和最小的行列值，同时求出以国王为中心最大为5×5的接送区域pickArea
 *			核心思想	若国王 + 骑士 >= 4人，集合点必定出现在最外围的四个角色所围成的四边形中
@@ -209,7 +216,7 @@ int Chess::Dijkstra(int u, int v)
 */
 void Chess::NarrowTheRange() 
 {
-	//四边形的坐标范围，初始化为国王的点
+	//四边形的坐标范围，初始化为国王的位置
 	int rowMax , rowMin, colMax, colMin;
 		rowMax = rowMin = king[0]; colMax = colMin = king[1];
 
@@ -232,6 +239,7 @@ void Chess::NarrowTheRange()
 	pickArea[3] = (king[1] + 2 < 8 ? king[1] + 2 : (king[1] + 1 < 8 ? king[1] + 1 : king[1]));//colMax
 }
 
+
 /*
 * @brief	找到集合点
 *			核心思想	1、已通过剪枝函数求得集合点可能出现的范围，只需枚举出现在range数组界定的范围内的点
@@ -249,7 +257,7 @@ void Chess::FindAssemblyPoint()
 	int pickStep = 0;//当前骑士去接国王所需的步数，初始化为0
 
 	//用一维坐标遍历棋盘上的点
-	//骑士不接国王时，直接寻找集合点1
+	//骑士不接国王时，直接寻找集合点（1）
 	for (int i = 0; i < 64; i++)
 	{
 		//判断该点是否在剪枝函数限定的范围内，若是，则继续计算，否则跳过查询下一个点
@@ -259,7 +267,7 @@ void Chess::FindAssemblyPoint()
 				step += Dijkstra(i, knight[j][0] * 8 + knight[j][1]);//用迪杰斯特拉算法求各个骑士到给定点的步数
 			//国王可以斜着走，因此国王的步数 = max（ 源目两点行坐标的差值 , 源目两点列坐标的差值）
 			step += abs(king[0] - GetRow(i)) > abs(king[1] - GetCol(i)) ? abs(king[0] - GetRow(i)) : abs(king[1] - GetCol(i));
-			//更新当前最小步数与暂定集合点1
+			//更新当前最小步数与暂定集合点（1）
 			if (step < minStep1)
 			{
 				minStep1 = step;
@@ -299,7 +307,7 @@ void Chess::FindAssemblyPoint()
 		{
 			for (int j = 0; j < knightNum; j++)
 				step += Dijkstra(i, newKnight[j][0] * 8 + newKnight[j][1]);//用迪杰斯特拉算法求各个骑士到给定点的步数
-			//更新当前最小步数与暂定集合点1
+			//更新当前最小步数与暂定集合点（2）
 			if (step < minStep1)
 			{
 				minStep2 = step;
@@ -323,13 +331,17 @@ void Chess::FindAssemblyPoint()
 	}
 }
 
-//输出计算结果
+
+/*
+* @brief	输出计算结果
+*/
 void Chess::Output()
 {
 	cout << "最小步数为：" << assemblyStep << "步。" << endl;
 	cout << "集合点为：（" << assemblyPoint[0] << "，" << assemblyPoint[1] << "）。" << endl;
 	cout << "计算完成。" << endl;
 }
+
 
 int main()
 {
