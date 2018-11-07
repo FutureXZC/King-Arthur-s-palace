@@ -233,14 +233,10 @@ void CChess::NarrowTheRange()
 	range[2] = colMin; range[3] = colMax;
 
 	//求国王被接送的区域，只需判断坐标±2或±1后是否越界即可
-	//pickArea[0] = (king[0] - 2 > -1 ? king[0] - 2 : (king[0] - 1 > -1 ? king[0] - 1 : king[0]));//rowMin
-	//pickArea[1] = (king[0] + 2 < 8 ? king[0] + 2 : (king[0] + 1 < 8 ? king[0] + 1 : king[0]));//rowMax
-	//pickArea[2] = (king[1] - 2 > -1 ? king[1] - 2 : (king[1] - 1 > -1 ? king[1] - 1 : king[1]));//colMin
-	//pickArea[3] = (king[1] + 2 < 8 ? king[1] + 2 : (king[1] + 1 < 8 ? king[1] + 1 : king[1]));//colMax
-	pickArea[0] = king[0] - 1 > -1 ? king[0] - 1 : king[0];
-	pickArea[1] = king[0] + 1 < 8 ? king[0] + 1 : king[0];
-	pickArea[2] = king[1] - 1 > -1 ? king[1] - 1 : king[1];
-	pickArea[3] = king[1] + 1 < 8 ? king[1] + 1 : king[1];
+	pickArea[0] = (king[0] - 2 > -1 ? king[0] - 2 : (king[0] - 1 > -1 ? king[0] - 1 : king[0]));//rowMin
+	pickArea[1] = (king[0] + 2 < 8 ? king[0] + 2 : (king[0] + 1 < 8 ? king[0] + 1 : king[0]));//rowMax
+	pickArea[2] = (king[1] - 2 > -1 ? king[1] - 2 : (king[1] - 1 > -1 ? king[1] - 1 : king[1]));//colMin
+	pickArea[3] = (king[1] + 2 < 8 ? king[1] + 2 : (king[1] + 1 < 8 ? king[1] + 1 : king[1]));//colMax
 }
 
 
@@ -272,7 +268,7 @@ void CChess::FindAssemblyPoint()
 			//国王可以斜着走，因此国王的步数 = max（ 源目两点行坐标的差值 , 源目两点列坐标的差值）
 			step += abs(king[0] - GetRow(i)) > abs(king[1] - GetCol(i)) ? abs(king[0] - GetRow(i)) : abs(king[1] - GetCol(i));
 			//更新当前最小步数与暂定集合点（1）
-			if (step < minStep1)
+			if (step <= minStep1)
 			{
 				minStep1 = step;
 				point1 = i;
@@ -284,47 +280,49 @@ void CChess::FindAssemblyPoint()
 
 	//骑士接国王时
 	int pickRowMin = pickArea[0], pickRowMax = pickArea[1], pickColMin = pickArea[2], pickColMax = pickArea[3];//取出pickArea内的范围
-	minPickStep = INFTY; //骑士走到接送点的最小接送步数初始化为无穷大
-	//在pickArea内挑选出“御用骑士”
-	for (int i = pickRowMin; i <= pickRowMax; i++)
-		for (int j = pickColMin; j <= pickColMax; j++)
+	int nowPickPoint = 0;//当前骑士接国王的位置，初始化为0，0
+	//在pickArea内，让第k个骑士尝试去接国王，遍历每个骑士，计算集合后的最小步数
+	for (int k = 0; k < knightNum; k++)
+	{
+		for (int i = pickRowMin; i <= pickRowMax; i++)//判定该点是否在pickArea范围内
 		{
-			for (int k = 0; k < knightNum; k++)//挑选接到国王需要的步数最少的骑士作为“御用骑士”
+			for (int j = pickColMin; j <= pickColMax; j++)
 			{
-				pickStep = Dijkstra(i * 8 + j, knight[k][0] * 8 + knight[k][1]);//求“御用骑士”到接送点的步数
+				pickStep = Dijkstra(i * 8 + j, knight[k][0] * 8 + knight[k][1]);//求当前骑士到当前接送点的步数
 				pickStep += abs(king[0] - i) > abs(king[1] - j) ? abs(king[0] - i) : abs(king[1] - j);//国王到接送点的步数
-				//更新骑士接送步数，将接送点作为“御用骑士”的新起始位置
-				if (pickStep < minPickStep)
+				nowPickPoint = i * 8 + j;//接送点的坐标
+
+				//复制一个knight数组，更新当前骑士的位置至接送点
+				int newKnight[63][2];
+				memcpy(newKnight, knight, sizeof(knight));
+				newKnight[k][0] = GetRow(nowPickPoint); newKnight[k][1] = GetCol(nowPickPoint);
+				
+				//复制并更新完骑士数组后，正式开始寻找集合点（2）
+				for (int i = 0; i < 64; i++)
 				{
-					minPickStep = pickStep;
-					pickKnight = k;
-					pickPoint = i * 8 + j;
+					//判断该点是否在剪枝函数限定的范围内，若是，则继续计算，否则跳过查询下一个点
+					if (GetRow(i) >= rowMin && GetRow(i) <= rowMax && GetCol(i) >= colMin && GetCol(i) <= colMax)
+					{
+						for (int j = 0; j < knightNum; j++)
+							step += Dijkstra(i, newKnight[j][0] * 8 + newKnight[j][1]);//用迪杰斯特拉算法求各个骑士到给定点的步数
+						//总步数还需包括 接送国王时花的步数
+						step += pickStep;
+
+						//更新当前最小步数、暂定集合点（2）、最终“御用骑士”的下标、接送点和接送步数
+						if (step <= minStep2)
+						{
+							minStep2 = step;
+							point2 = i;
+							pickKnight = k;
+							pickPoint = nowPickPoint;
+							minPickStep = pickStep;
+						}
+					}
+					step = 0;//计数器置零
 				}
 			}
 		}
-
-	int newKnight[63][2];//复制一个knight数组，更新“御用骑士”的位置
-	memcpy(newKnight, knight, sizeof(knight));
-	newKnight[pickKnight][0] = GetRow(pickPoint); newKnight[pickKnight][1] = GetCol(pickPoint);
-	//复制并更新完骑士数组后，正式开始寻找集合点（2）
-	for (int i = 0; i < 64; i++)
-	{
-		//判断该点是否在剪枝函数限定的范围内，若是，则继续计算，否则跳过查询下一个点
-		if (GetRow(i) >= rowMin && GetRow(i) <= rowMax && GetCol(i) >= colMin && GetCol(i) <= colMax)
-		{
-			for (int j = 0; j < knightNum; j++)
-				step += Dijkstra(i, newKnight[j][0] * 8 + newKnight[j][1]);//用迪杰斯特拉算法求各个骑士到给定点的步数
-			//更新当前最小步数与暂定集合点（2）
-			if (step < minStep2)
-			{
-				minStep2 = step;
-				point2 = i;
-			}
-		}
-		step = 0;//计数器置零
 	}
-	//总步数还需包括 接送国王时花的步数
-	minStep2 += minPickStep;
 
 	//取上述两种方法求得步数的较小者，更新集合点位置assemblyPoint和集合所需的总步数assemblyStep
 	if (minStep1 < minStep2)
@@ -349,7 +347,8 @@ void CChess::Output()
 	cout << "集合点为：（" << assemblyPoint[0] << "，" << assemblyPoint[1] << "）。" << endl;
 	cout << "计算完成。" << endl;
 	cout << "pickPoint " << GetRow(pickPoint) << "," << GetCol(pickPoint) <<endl;
-	cout << minPickStep << endl;
+	cout << "minPickStep = " << minPickStep << endl;
+	cout << "pickKnight = " << pickKnight << endl;
 }
 
 
