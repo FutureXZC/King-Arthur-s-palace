@@ -277,7 +277,6 @@ void CChess::FindAssemblyPoint()
 		step = 0;//计数器置零
 	}
 
-
 	//骑士接国王时
 	int pickRowMin = pickArea[0], pickRowMax = pickArea[1], pickColMin = pickArea[2], pickColMax = pickArea[3];//取出pickArea内的范围
 	int nowPickPoint = 0;//当前骑士接国王的位置，初始化为0，0
@@ -325,7 +324,7 @@ void CChess::FindAssemblyPoint()
 	}
 
 	//取上述两种方法求得步数的较小者，更新集合点位置assemblyPoint和集合所需的总步数assemblyStep
-	if (minStep1 < minStep2)
+	if (minStep1 <= minStep2)
 	{
 		assemblyStep = minStep1;
 		assemblyPoint[0] = GetRow(point1); assemblyPoint[1] = GetCol(point1);
@@ -343,12 +342,18 @@ void CChess::FindAssemblyPoint()
 */
 void CChess::Output()
 {
-	cout << "最小步数为：" << assemblyStep << "步。" << endl;
+	cout << "集合的最小步数为：" << assemblyStep << "步。" << endl;
 	cout << "集合点为：（" << assemblyPoint[0] << "，" << assemblyPoint[1] << "）。" << endl;
+	if (isPick)
+	{
+		cout << "国王的接送点为：（" << GetRow(pickPoint) << "，" << GetCol(pickPoint) << "）。" << endl;
+		cout << "接送时国王与骑士所走的步数和为：" << minPickStep << "步。" << endl;
+		cout << "负责接送国王的是在（" << knight[pickKnight][0] << "，" << knight[pickKnight][1] << "）处的骑士。" << endl;
+	}
+	else {
+		cout << "国王不用接，自己走过去。" << endl;
+	}
 	cout << "计算完成。" << endl;
-	cout << "pickPoint " << GetRow(pickPoint) << "," << GetCol(pickPoint) <<endl;
-	cout << "minPickStep = " << minPickStep << endl;
-	cout << "pickKnight = " << pickKnight << endl;
 }
 
 
