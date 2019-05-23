@@ -28,5 +28,5 @@
 ```
 ## 说明
 &emsp;&emsp;IDE：Visual Studio 2017  
-&emsp;&emsp;核心算法：迪杰斯特拉算法和枚举法
+&emsp;&emsp;核心算法：迪杰斯特拉算法和枚举法  
 &emsp;&emsp;日期：2018/10
