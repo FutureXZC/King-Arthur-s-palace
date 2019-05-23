@@ -1,7 +1,32 @@
-# King-Arthur's-palace
-A project in programming week in 2018/10.</br>
-IDE: Visual Studio 2017</br>
-Core Algorithm: Dijstra Algorithm and Enumeration Method</br>
-Brief: The king and knights have different ways to move, which are sprinkled throughout the 8×8 chessboard. </br>
-&emsp;&emsp;&nbsp;&nbsp;Users can set the number of knights, and then input the coordinates of the king and knights.</br>
-&emsp;&emsp;&nbsp;&nbsp;After that you will get the shortest path from every origins to the assembly point.
+# 亚瑟王的宫殿  
+## 题目描述  
+&emsp;&emsp;很久以前，亚瑟王和他的骑士习惯每年元旦去庆祝他们的友谊。为了纪念上述事件，我们把这些故事看作是一个棋盘游戏。有一个国王和若干个骑士被放置在一个如下图所示的8×8的棋盘上，没有两个骑士在同一个方格内。  
+&emsp;&emsp;![棋盘](http://cdn.luogu.org/upload/pic/843.png)  
+&emsp;&emsp;国王可以移动到任何一个相邻的方格，从下图中黑子位置到下图中白子位置前提是他 不掉出棋盘之外。  
+&emsp;&emsp;![国王走法](http://cdn.luogu.org/upload/pic/844.png)  
+&emsp;&emsp;一个骑士可以从下图中黑子位置移动到下图中白子位置(走“日”字形） 但前提是他 不掉出棋盘之外。  
+&emsp;&emsp;![骑士走法](http://cdn.luogu.org/upload/pic/845.png)  
+&emsp;&emsp;在游戏中，玩家可在每个方格上放不止一个棋子，假定方格足够大，任何棋子都不会 阻碍到其他棋子正常行动。  
+&emsp;&emsp;玩家的任务就是把所有的棋子移动到同一个方格里——用最小的步数。为了完成这个 任务，他必须按照上面所说的规则去移动棋子。另外，玩家可以选择一个骑士跟国王从他 们两个相遇的那个点开始一起行动，这时他们按照骑士的行动规则行动，其他的单独骑士 则自己一直走到集中点。骑士和国王一起走的时候，只算一个人走的步数。  
+&emsp;&emsp;请计算他们集中在一起的最小步数，而且玩家必须自己找出这个集中点。当然，这些 棋子可以在棋盘的任何地方集合。  
+## 输入与输出测试样例
+```
+坐标范围为（0，0）到（7，7），请输入国王的坐标（行，列）：4 3  
+请输入在8×8棋盘中骑士的数量：4  
+坐标范围为（0，0）到（7，7），  
+请输入第1个骑士的坐标（行， 列）：5 0  
+请输入第2个骑士的坐标（行， 列）：0 0  
+请输入第3个骑士的坐标（行， 列）：7 7  
+请输入第4个骑士的坐标（行， 列）：0 7  
+计算中...  
+集合的最小步数为：10步。  
+集合点为：（3，1）。  
+国王的接送点为：（4，3）。  
+接送时国王与骑士所走的步数和为：3步。  
+负责接送国王的是在（7，7）处的骑士。  
+计算完成。
+```
+## 说明
+&emsp;&emsp;IDE：Visual Studio 2017  
+&emsp;&emsp;核心算法：迪杰斯特拉算法和枚举法
+&emsp;&emsp;日期：2018/10

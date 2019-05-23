@@ -15,7 +15,7 @@
 *	Version 6.0：增加了国王坐标的输入检查，修改了骑士坐标输入错误时的提示信息
 */
 
-#include<iostream>
+#include<bits/stdc++.h>
 
 using namespace std;
 
